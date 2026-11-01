@@ -1,0 +1,51 @@
+;; macOS Seatbelt profile for llama-server. Template: scripts/start-model.sh fills in
+;; the @PLACEHOLDERS@ and writes the resolved profile to .run/llama-server.sb.
+;;
+;; Allowed: run the one llama-server binary, use the GPU (Metal), read the model,
+;; listen on 127.0.0.1:@PORT@, write temp/cache files.
+;; Denied: every other network operation, DNS, the network-capable system daemons,
+;; launching any other program, reading your home folder, writing outside temp.
+;;
+;; Seatbelt applies the LAST matching rule, so each deny below is followed by the
+;; narrow exceptions to it.
+
+(version 1)
+(allow default)
+
+;; ---------------------------------------------------------------- network
+(deny network*)
+(allow network-bind    (local ip "localhost:@PORT@"))
+(allow network-inbound (local ip "localhost:@PORT@"))
+
+;; System daemons that do network I/O on a caller's behalf. `deny network*` only
+;; covers this process's own sockets, so also block asking mDNSResponder to resolve
+;; names (DNS can carry data out) or nsurlsessiond/cloudd to fetch or upload.
+(deny mach-lookup
+  (global-name "com.apple.mDNSResponder")
+  (global-name "com.apple.dnssd.service")
+  (global-name "com.apple.nsurlsessiond")
+  (global-name "com.apple.nsurlsessiond.NSURLSessionProxyService")
+  (global-name "com.apple.cloudd"))
+
+;; ---------------------------------------------------------------- processes
+(deny process-exec)
+(allow process-exec (literal "@LLAMA_BIN@") @EXTRA_EXEC@)
+
+;; ---------------------------------------------------------------- files
+;; Nothing in your home folder except the lab's model, chat template, binary and key.
+(deny file-read* (subpath "@HOME@"))
+(allow file-read*
+  (subpath "@LAB_DIR@/models")
+  (subpath "@LAB_DIR@/templates")
+  (subpath "@LAB_DIR@/vendor/llama.cpp/build/bin")
+  (literal "@LAB_DIR@/.run/llama.key"))
+;; stat() on parent folders (path resolution) without reading their contents.
+(allow file-read-metadata)
+
+(deny file-write* (subpath "/"))
+(allow file-write*
+  (subpath "/private/var/folders")      ;; per-user temp + Metal shader cache
+  (subpath "/private/tmp")
+  (literal "/dev/null")
+  (literal "/dev/tty")
+  (literal "/dev/dtracehelper"))

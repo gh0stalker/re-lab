@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Pre-commit security gate. Blocks the commit if the supply-chain or fuzz checks fail.
+# Enable once per clone with:  make hooks   (or: git config core.hooksPath .githooks)
+# Bypass in an emergency with:  git commit --no-verify   (don't make a habit of it).
+exec "$(git rev-parse --show-toplevel)/scripts/security-check.sh"

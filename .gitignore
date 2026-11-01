@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+agent/.venv/
+
+# macOS
+.DS_Store
+
+# Runtime state and local builds (never commit)
+.run/
+vendor/
+dist/
+symbols/
+
+# Downloaded model + per-run data; keep the empty dirs via their .gitkeep
+models/*
+!models/.gitkeep
+projects/*
+!projects/.gitkeep
+logs/*
+!logs/.gitkeep
+samples/*
+!samples/.gitkeep
+
+# Partial / in-progress downloads
+*.part
+*.tmp
